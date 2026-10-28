@@ -1,0 +1,112 @@
+/* PRODUCT DETAIL */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.back-link:hover { text-decoration: underline; }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+@media (min-width: 768px) {
+  .detail-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+    align-items: start;
+  }
+}
+
+.detail-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-lg);
+  font-size: 7rem;
+}
+@media (min-width: 768px) {
+  .detail-image { font-size: 10rem; }
+}
+
+.detail-info h1 { margin: var(--space-1) 0; }
+.detail-price {
+  margin: var(--space-2) 0;
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.stock-status {
+  display: inline-block;
+  padding: 4px var(--space-2);
+  border-radius: 999px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.stock-status.in { background: #d1fae5; color: #065f46; }
+.stock-status.out { background: #fee2e2; color: #991b1b; }
+.stock-status.low { background: #fef3c7; color: #92400e; }
+
+.detail-desc { margin-top: var(--space-3); }
+.detail-desc h2 {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-lg);
+}
+.detail-desc p { color: var(--color-text-muted); }
+
+/* Quantity Selector */
+.buy-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.qty-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.qty-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+.qty-stepper button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  cursor: pointer;
+}
+.qty-stepper button:hover:not(:disabled) { background: var(--color-bg); }
+.qty-stepper button:disabled { opacity: 0.35; cursor: not-allowed; }
+.qty-value {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 700;
+}
+.buy-box .btn-add { flex: 1; min-width: 180px; }
+
+.cart-link {
+  display: inline-block;
+  margin-top: var(--space-2);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.cart-link:hover { text-decoration: underline; }
+
+.related { margin-top: var(--space-8); }
+.related h2 { margin-bottom: var(--space-3); }

@@ -68,6 +68,12 @@ const orderSchema = new mongoose.Schema(
       enum: ['pending', 'processing', 'completed', 'cancelled'],
       default: 'pending',
     },
+    idempotencyKey: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
   },
   {
     timestamps: true,

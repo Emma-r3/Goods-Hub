@@ -1,11 +1,29 @@
 import Order from '../models/Order.js';
+import Product from '../models/Product.js';
 
-// @desc    Create a new order
+// @desc    Create a new order with Idempotency protection & stock validation
 // @route   POST /api/orders
-// @access  Public / Optional Auth
+// @access  Private (Protected)
 export const createOrder = async (req, res, next) => {
   try {
     const { customerInfo, items, paymentMethod, totalAmount } = req.body;
+    const idempotencyKey =
+      req.headers['idempotency-key'] ||
+      req.headers['x-idempotency-key'] ||
+      req.body.idempotencyKey;
+
+    // 1. Idempotency Check: if key exists, check if already processed
+    if (idempotencyKey) {
+      const existingOrder = await Order.findOne({ idempotencyKey });
+      if (existingOrder) {
+        return res.status(200).json({
+          success: true,
+          message: 'Order already processed (idempotent replay)',
+          isIdempotentReplay: true,
+          order: existingOrder,
+        });
+      }
+    }
 
     if (!items || items.length === 0) {
       return res.status(400).json({
@@ -21,6 +39,24 @@ export const createOrder = async (req, res, next) => {
       });
     }
 
+    // 2. Validate stock availability to avoid negative inventory bugs
+    for (const item of items) {
+      let productDoc = null;
+      if (item.product) {
+        productDoc = await Product.findById(item.product);
+      } else if (item.productId) {
+        productDoc = await Product.findOne({ customId: item.productId });
+      }
+
+      if (productDoc && productDoc.stock < item.quantity) {
+        const prodName = typeof productDoc.name === 'object' ? (productDoc.name.id || productDoc.name.en) : productDoc.name;
+        return res.status(400).json({
+          success: false,
+          message: `Stok produk "${prodName}" tidak mencukupi (sisa ${productDoc.stock})`,
+        });
+      }
+    }
+
     const orderNumber = `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const order = new Order({
@@ -30,9 +66,19 @@ export const createOrder = async (req, res, next) => {
       items,
       paymentMethod: paymentMethod || 'bank',
       totalAmount,
+      idempotencyKey: idempotencyKey || undefined,
     });
 
     const createdOrder = await order.save();
+
+    // 3. Atomically decrement stock
+    for (const item of items) {
+      if (item.product) {
+        await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } });
+      } else if (item.productId) {
+        await Product.findOneAndUpdate({ customId: item.productId }, { $inc: { stock: -item.quantity } });
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -40,6 +86,22 @@ export const createOrder = async (req, res, next) => {
       order: createdOrder,
     });
   } catch (error) {
+    // 4. Handle race condition: if concurrent request hit duplicate idempotency key
+    if (error.code === 11000 && error.keyPattern?.idempotencyKey) {
+      const idempotencyKey =
+        req.headers['idempotency-key'] ||
+        req.headers['x-idempotency-key'] ||
+        req.body.idempotencyKey;
+      const existingOrder = await Order.findOne({ idempotencyKey });
+      if (existingOrder) {
+        return res.status(200).json({
+          success: true,
+          message: 'Order already processed (idempotent replay)',
+          isIdempotentReplay: true,
+          order: existingOrder,
+        });
+      }
+    }
     next(error);
   }
 };

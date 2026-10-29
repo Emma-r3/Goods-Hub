@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import { useCart } from '../context/useCart'
+import { useAuth } from '../context/useAuth'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const { lang, setLang, t } = useLanguage()
   const { totalItems } = useCart()
+  const { user, isAuthenticated, isAdmin, logout } = useAuth()
 
   const closeMenu = () => setOpen(false)
 
@@ -31,6 +33,28 @@ export default function Navbar() {
           <NavLink to="/orders" className="nav-link" onClick={closeMenu}>
             {t('nav.orders')}
           </NavLink>
+
+          {/* Mobile Auth Links */}
+          <div className="mobile-only-auth" style={{ display: open ? 'block' : 'none', marginTop: '1rem', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem' }}>
+            {isAuthenticated ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <span className="user-badge">
+                  👤 {user?.name} {isAdmin && <span className="admin-tag">ADMIN</span>}
+                </span>
+                <button
+                  onClick={() => { logout(); closeMenu(); }}
+                  className="btn btn-outline"
+                  style={{ width: '100%', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                >
+                  {t('nav.logout')}
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" className="btn btn-primary" style={{ display: 'block', textAlign: 'center' }} onClick={closeMenu}>
+                {t('nav.login')}
+              </Link>
+            )}
+          </div>
         </nav>
 
         <div className="nav-actions">
@@ -51,6 +75,32 @@ export default function Navbar() {
             </svg>
             {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
           </Link>
+
+          {/* Desktop Auth Section */}
+          <div className="desktop-auth" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem' }}>
+            {isAuthenticated ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="user-badge" title={user?.email}>
+                  👤 {user?.name?.split(' ')[0]} {isAdmin && <span className="admin-tag">ADMIN</span>}
+                </span>
+                <button
+                  onClick={logout}
+                  className="btn btn-outline"
+                  style={{ padding: '0.35rem 0.7rem', fontSize: '0.85rem' }}
+                >
+                  {t('nav.logout')}
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="btn btn-outline"
+                style={{ padding: '0.35rem 0.85rem', fontSize: '0.85rem' }}
+              >
+                {t('nav.login')}
+              </Link>
+            )}
+          </div>
 
           <button
             className="icon-btn menu-toggle"

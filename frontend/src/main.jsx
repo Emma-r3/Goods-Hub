@@ -10,8 +10,10 @@ import './styles/detail.css'
 import './styles/cart.css'
 import './styles/checkout.css'
 import './styles/orders.css'
+import './styles/auth.css'
 import App from './App.jsx'
 import LanguageProvider from './context/LanguageProvider.jsx'
+import AuthProvider from './context/AuthProvider.jsx'
 import CartProvider from './context/CartProvider.jsx'
 import OrderProvider from './context/OrderProvider.jsx'
 
@@ -19,11 +21,13 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <LanguageProvider>
-        <CartProvider>
-          <OrderProvider>
-            <App />
-          </OrderProvider>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <OrderProvider>
+              <App />
+            </OrderProvider>
+          </CartProvider>
+        </AuthProvider>
       </LanguageProvider>
     </BrowserRouter>
   </StrictMode>,

@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import { useCart } from '../context/useCart'
 import { formatPrice, localized } from '../utils/format'
 import { useOrders } from '../context/useOrders'
+import { useAuth } from '../context/useAuth'
+import api from '../utils/api'
 
 const FIELDS = ['fullName', 'email', 'phone', 'address', 'city', 'postalCode']
 
@@ -65,11 +67,24 @@ export default function Checkout() {
   const { lang, t } = useLanguage()
   const { items, totalItems, subtotal, shipping, total, clearCart } = useCart()
   const { addOrder } = useOrders()
+  const { user } = useAuth()
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [touched, setTouched] = useState({})
   const [payment, setPayment] = useState('bank')
   const [order, setOrder] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  // Auto-fill user name & email if logged in
+  useEffect(() => {
+    if (user) {
+      setForm((prev) => ({
+        ...prev,
+        fullName: prev.fullName || user.name || '',
+        email: prev.email || user.email || '',
+      }))
+    }
+  }, [user])
 
   // Errors are recalculated on every render, but only shown for touched fields
   const errors = {}
@@ -87,7 +102,7 @@ export default function Checkout() {
     setTouched((prev) => ({ ...prev, [name]: true }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setTouched(Object.fromEntries(FIELDS.map((f) => [f, true])))
 
@@ -96,6 +111,8 @@ export default function Checkout() {
       document.getElementById(`field-${firstInvalid}`)?.focus()
       return
     }
+
+    setSubmitting(true)
 
     const newOrder = {
       number: `GH-${Date.now().toString().slice(-8)}`,
@@ -114,6 +131,39 @@ export default function Checkout() {
         city: form.city.trim(),
         postalCode: form.postalCode.trim(),
       },
+    }
+
+    try {
+      // Sync to MongoDB Backend API
+      const apiPayload = {
+        customerInfo: {
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          address: form.address.trim(),
+          city: form.city.trim(),
+          postalCode: form.postalCode.trim(),
+        },
+        items: items.map((i) => ({
+          productId: typeof i.id === 'number' ? i.id : undefined,
+          product: typeof i.id === 'string' ? i.id : undefined,
+          name: i.name,
+          price: i.price,
+          quantity: i.qty,
+          emoji: i.emoji,
+        })),
+        paymentMethod: payment,
+        totalAmount: total,
+      }
+
+      const res = await api.createOrder(apiPayload)
+      if (res.success && res.order) {
+        newOrder.number = res.order.orderNumber
+      }
+    } catch (err) {
+      console.warn('Backend API order sync error (order saved locally):', err.message)
+    } finally {
+      setSubmitting(false)
     }
 
     addOrder(newOrder)
@@ -169,12 +219,11 @@ export default function Checkout() {
     <div className="container section">
       <h1>{t('checkout.title')}</h1>
 
-      <div className="cart-layout">
-        {/* Form */}
-        <form id="checkout-form" onSubmit={handleSubmit} noValidate>
-          <section className="card form-card">
+      <div className="checkout-layout">
+        <form onSubmit={handleSubmit} noValidate className="checkout-form">
+          <section className="card form-section">
             <h2>{t('checkout.shippingInfo')}</h2>
-            <div className="form-grid">
+            <div className="fields-grid">
               <Field
                 name="fullName"
                 label={t('checkout.fullName')}
@@ -204,8 +253,6 @@ export default function Checkout() {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 autoComplete="tel"
-                inputMode="tel"
-                placeholder="08123456789"
               />
               <Field
                 name="address"
@@ -215,8 +262,9 @@ export default function Checkout() {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 autoComplete="street-address"
-                textarea
                 full
+                textarea
+                rows={2}
               />
               <Field
                 name="city"
@@ -235,75 +283,76 @@ export default function Checkout() {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 autoComplete="postal-code"
-                inputMode="numeric"
                 maxLength={5}
+                inputMode="numeric"
               />
             </div>
           </section>
 
-          <fieldset className="card form-card">
-            <legend>{t('checkout.paymentMethod')}</legend>
-            <div className="pay-options">
+          <section className="card form-section">
+            <h2>{t('checkout.paymentMethod')}</h2>
+            <div className="payment-options" role="radiogroup" aria-label={t('checkout.paymentMethod')}>
               {PAYMENTS.map((p) => (
-                <label key={p.value} className="pay-option">
+                <label
+                  key={p.value}
+                  className={`payment-option ${payment === p.value ? 'selected' : ''}`}
+                >
                   <input
                     type="radio"
                     name="payment"
                     value={p.value}
                     checked={payment === p.value}
-                    onChange={() => setPayment(p.value)}
+                    onChange={(e) => setPayment(e.target.value)}
                   />
-                  {t(p.label)}
+                  <span>{t(p.label)}</span>
                 </label>
               ))}
             </div>
-            <p className="pay-note">{t('checkout.paymentNote')}</p>
-          </fieldset>
+            <p className="payment-note">{t('checkout.paymentNote')}</p>
+          </section>
+
+          <button
+            type="submit"
+            className="btn btn-primary submit-btn"
+            disabled={submitting}
+          >
+            {submitting ? t('checkout.submitting') : `${t('checkout.placeOrder')} • ${formatPrice(total)}`}
+          </button>
         </form>
 
-        {/* Summary */}
-        <aside className="card summary">
-          <h2>{t('checkout.orderSummary')}</h2>
+        <aside className="checkout-summary">
+          <div className="card">
+            <h2>{t('checkout.orderSummary')}</h2>
+            <ul className="summary-items" aria-label={t('cart.items', { count: totalItems })}>
+              {items.map((i) => (
+                <li key={i.id} className="summary-item">
+                  <span className="summary-item-emoji" style={{ background: i.bg }} aria-hidden="true">
+                    {i.emoji}
+                  </span>
+                  <div className="summary-item-info">
+                    <span className="summary-item-name">{localized(i.name, lang)}</span>
+                    <span className="text-muted">× {i.qty}</span>
+                  </div>
+                  <span className="summary-item-price">{formatPrice(i.price * i.qty)}</span>
+                </li>
+              ))}
+            </ul>
 
-          <ul className="summary-items">
-            {items.map((item) => (
-              <li key={item.id} className="summary-item">
-                <span
-                  className="summary-item-emoji"
-                  style={{ background: item.bg }}
-                  aria-hidden="true"
-                >
-                  {item.emoji}
-                </span>
-                <span className="summary-item-name">
-                  {localized(item.name, lang)} × {item.qty}
-                </span>
-                <span className="summary-item-price">
-                  {formatPrice(item.price * item.qty)}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="summary-row">
-            <span>{t('cart.subtotal')} ({t('cart.items', { count: totalItems })})</span>
-            <span>{formatPrice(subtotal)}</span>
+            <div className="summary-calc">
+              <div className="calc-row">
+                <span>{t('cart.subtotal')}</span>
+                <span>{formatPrice(subtotal)}</span>
+              </div>
+              <div className="calc-row">
+                <span>{t('cart.shipping')}</span>
+                <span>{shipping === 0 ? t('cart.free') : formatPrice(shipping)}</span>
+              </div>
+              <div className="calc-row total">
+                <span>{t('cart.total')}</span>
+                <span>{formatPrice(total)}</span>
+              </div>
+            </div>
           </div>
-          <div className="summary-row">
-            <span>{t('cart.shipping')}</span>
-            <span>{shipping === 0 ? t('cart.free') : formatPrice(shipping)}</span>
-          </div>
-          <div className="summary-row total">
-            <span>{t('cart.total')}</span>
-            <span>{formatPrice(total)}</span>
-          </div>
-
-          <button type="submit" form="checkout-form" className="btn btn-primary btn-block">
-            {t('checkout.placeOrder')}
-          </button>
-          <Link to="/cart" className="btn btn-outline btn-block">
-            {t('checkout.backToCart')}
-          </Link>
         </aside>
       </div>
     </div>

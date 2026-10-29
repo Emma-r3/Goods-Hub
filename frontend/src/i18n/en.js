@@ -6,6 +6,36 @@ const en = {
     searchPlaceholder: 'Search products...',
     menu: 'Menu',
     orders: 'Orders',
+    login: 'Login',
+    register: 'Register',
+    logout: 'Logout',
+  },
+  auth: {
+    loginTitle: 'Welcome Back',
+    loginSubtitle: 'Sign in to access your orders and account',
+    registerTitle: 'Create an Account',
+    registerSubtitle: 'Join GoodsHub to enjoy seamless shopping',
+    name: 'Full Name',
+    namePlaceholder: 'Enter your full name',
+    email: 'Email Address',
+    emailPlaceholder: 'you@example.com',
+    password: 'Password',
+    passwordPlaceholder: 'At least 6 characters',
+    confirmPassword: 'Confirm Password',
+    confirmPasswordPlaceholder: 'Re-enter your password',
+    loginBtn: 'Sign In',
+    registerBtn: 'Create Account',
+    noAccount: "Don't have an account?",
+    haveAccount: 'Already have an account?',
+    signInHere: 'Sign in here',
+    registerHere: 'Register here',
+    logout: 'Logout',
+    loggingIn: 'Signing in...',
+    registering: 'Registering...',
+    mustLoginOrders: 'Please log in to view your orders.',
+    mustLoginCheckout: 'Please log in to proceed to checkout.',
+    passwordMismatch: 'Passwords do not match.',
+    passwordLength: 'Password must be at least 6 characters.',
   },
   home: {
     heroTitle: 'Everything you need, in one place',
@@ -33,6 +63,7 @@ const en = {
     sortRating: 'Top Rated',
     searchLabel: 'Search products',
     clearFilters: 'Clear filters',
+    loading: 'Loading products from database...',
   },
   detail: {
     backToProducts: 'Back to products',
@@ -49,6 +80,7 @@ const en = {
     decrease: 'Decrease quantity',
     increase: 'Increase quantity',
     viewCart: 'View cart',
+    loading: 'Loading product details...',
   },
   cart: {
     title: 'Shopping Cart',
@@ -83,6 +115,7 @@ const en = {
     cod: 'Cash on Delivery',
     orderSummary: 'Order Summary',
     placeOrder: 'Place Order',
+    submitting: 'Processing order...',
     required: 'This field is required.',
     invalidEmail: 'Please enter a valid email.',
     successTitle: 'Order placed!',
@@ -95,7 +128,7 @@ const en = {
     paymentNote: 'This is a demo store. No real payment is made.',
     checkOrders: 'Check Orders',
   },
-    categories: {
+  categories: {
     electronics: 'Electronics',
     fashion: 'Fashion',
     home: 'Home & Living',
@@ -103,12 +136,12 @@ const en = {
     sports: 'Sports',
     books: 'Books',
   },
-    notFound: {
+  notFound: {
     title: 'Page not found',
     text: "The page you're looking for doesn't exist.",
     back: 'Back to Home',
   },
-    orders: {
+  orders: {
     title: 'My Orders',
     empty: "You haven't placed any orders yet.",
     orderedOn: 'Ordered on',
@@ -116,6 +149,7 @@ const en = {
     payment: 'Payment',
     shipTo: 'Shipped to',
     count: '{count} orders',
+    status: 'Status',
   },
   footer: {
     tagline: 'A place to buy all sorts of things',
@@ -129,6 +163,6 @@ const en = {
     currencyNote: 'Prices in Indonesian Rupiah',
     language: 'Language',
   },
-}
+};
 
-export default en
+export default en;

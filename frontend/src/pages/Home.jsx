@@ -1,11 +1,31 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import ProductCard from '../components/ProductCard'
-import { products, CATEGORIES, CATEGORY_ICONS } from '../data/products'
+import { products as fallbackProducts, CATEGORIES, CATEGORY_ICONS } from '../data/products'
+import api from '../utils/api'
 
 export default function Home() {
   const { t } = useLanguage()
-  const featured = products.filter((p) => p.featured).slice(0, 8)
+  const [featured, setFeatured] = useState(() =>
+    fallbackProducts.filter((p) => p.featured).slice(0, 8)
+  )
+
+  useEffect(() => {
+    let isMounted = true
+    const loadFeatured = async () => {
+      try {
+        const res = await api.getProducts('featured=true')
+        if (isMounted && res.success && res.products?.length > 0) {
+          setFeatured(res.products.slice(0, 8))
+        }
+      } catch {
+        // Keeps fallback products silently if API isn't ready
+      }
+    }
+    loadFeatured()
+    return () => { isMounted = false }
+  }, [])
 
   const perks = [
     { icon: '🚚', title: t('home.perk1Title'), text: t('home.perk1Text') },
@@ -67,25 +87,25 @@ export default function Home() {
         </div>
         <div className="grid-products">
           {featured.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id || p._id} product={p} />
           ))}
         </div>
       </section>
 
       {/* Perks */}
-      <section className="perks">
-        <div className="container section">
-          <div className="perks-grid">
-            {perks.map((perk) => (
-              <div key={perk.title} className="perk">
-                <span className="perk-icon" aria-hidden="true">{perk.icon}</span>
-                <div>
-                  <h3>{perk.title}</h3>
-                  <p>{perk.text}</p>
-                </div>
+      <section className="container section">
+        <div className="perks-grid">
+          {perks.map((p, idx) => (
+            <div key={idx} className="perk">
+              <span className="perk-icon" aria-hidden="true">
+                {p.icon}
+              </span>
+              <div>
+                <h3>{p.title}</h3>
+                <p>{p.text}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </section>
     </>

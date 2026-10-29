@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import ProductCard from '../components/ProductCard'
-import { products, CATEGORIES } from '../data/products'
+import { products as fallbackProducts, CATEGORIES } from '../data/products'
+import api from '../utils/api'
 
 const SORT_OPTIONS = [
   { value: 'default', label: 'products.sortDefault' },
@@ -12,13 +13,35 @@ const SORT_OPTIONS = [
 ]
 
 export default function Products() {
-  const { lang, t } = useLanguage()
+  const { t } = useLanguage()
   const [params, setParams] = useSearchParams()
+  const [productList, setProductList] = useState(fallbackProducts)
+  const [loading, setLoading] = useState(false)
 
   const rawCategory = params.get('category')
   const category = CATEGORIES.includes(rawCategory) ? rawCategory : 'all'
   const query = params.get('q') || ''
   const sort = params.get('sort') || 'default'
+
+  // Fetch live products from Backend API
+  useEffect(() => {
+    let isMounted = true
+    const fetchApiProducts = async () => {
+      try {
+        setLoading(true)
+        const res = await api.getProducts()
+        if (isMounted && res.success && res.products?.length > 0) {
+          setProductList(res.products)
+        }
+      } catch (err) {
+        console.warn('Backend not reachable yet, using offline products:', err.message)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    fetchApiProducts()
+    return () => { isMounted = false }
+  }, [])
 
   // Update a single URL parameter, remove if empty/default
   const updateParam = (key, value, defaultValue) => {
@@ -31,13 +54,15 @@ export default function Products() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
 
-    let list = products.filter((p) => {
+    let list = productList.filter((p) => {
       const matchCategory = category === 'all' || p.category === category
       // Search in both EN and ID names
+      const nameEn = p.name?.en || (typeof p.name === 'string' ? p.name : '')
+      const nameId = p.name?.id || (typeof p.name === 'string' ? p.name : '')
       const matchQuery =
         !q ||
-        p.name.en.toLowerCase().includes(q) ||
-        p.name.id.toLowerCase().includes(q)
+        nameEn.toLowerCase().includes(q) ||
+        nameId.toLowerCase().includes(q)
       return matchCategory && matchQuery
     })
 
@@ -46,9 +71,7 @@ export default function Products() {
     if (sort === 'rating') list = [...list].sort((a, b) => b.rating - a.rating)
 
     return list
-  }, [category, query, sort])
-
-  const hasFilters = category !== 'all' || query || sort !== 'default'
+  }, [productList, category, query, sort])
 
   return (
     <div className="container section">
@@ -108,13 +131,13 @@ export default function Products() {
       </div>
 
       <p className="results-info" aria-live="polite">
-        {t('products.results', { count: filtered.length })}
+        {loading ? t('products.loading') : t('products.results', { count: filtered.length })}
       </p>
 
       {filtered.length > 0 ? (
         <div className="grid-products">
           {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id || p._id} product={p} />
           ))}
         </div>
       ) : (

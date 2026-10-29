@@ -1,25 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import { useCart } from '../context/useCart'
 import ProductCard from '../components/ProductCard'
-import { products, getProductById } from '../data/products'
+import { products as fallbackProducts, getProductById as getFallbackProduct } from '../data/products'
 import { formatPrice, localized } from '../utils/format'
+import api from '../utils/api'
 
-function ProductView({ product }) {
+function ProductView({ product, allProducts }) {
   const { lang, t } = useLanguage()
   const { addItem } = useCart()
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
 
   const name = localized(product.name, lang)
+  const desc = localized(product.description, lang)
   const soldOut = product.stock === 0
   const lowStock = product.stock > 0 && product.stock <= 10
 
-  // Related products: same category first, then others, max 4
+  // Related products
+  const pool = allProducts?.length > 0 ? allProducts : fallbackProducts
   const related = [
-    ...products.filter((p) => p.category === product.category && p.id !== product.id),
-    ...products.filter((p) => p.category !== product.category),
+    ...pool.filter((p) => p.category === product.category && (p.id !== product.id && p._id !== product._id)),
+    ...pool.filter((p) => p.category !== product.category),
   ].slice(0, 4)
 
   const handleAdd = () => {
@@ -37,11 +40,11 @@ function ProductView({ product }) {
       <div className="detail-grid">
         <div
           className="detail-image"
-          style={{ background: product.bg }}
+          style={{ background: product.bg || '#f3f4f6' }}
           role="img"
           aria-label={name}
         >
-          <span aria-hidden="true">{product.emoji}</span>
+          <span aria-hidden="true">{product.emoji || '📦'}</span>
         </div>
 
         <div className="detail-info">
@@ -62,47 +65,49 @@ function ProductView({ product }) {
             <span className="stock-status in">{t('detail.inStock')}</span>
           )}
 
-          <div className="detail-desc">
-            <h2>{t('detail.description')}</h2>
-            <p>{localized(product.description, lang)}</p>
-          </div>
+          <p className="detail-desc">{desc}</p>
 
-          {!soldOut && (
-            <div className="buy-box">
-              <div>
-                <span className="qty-label" id="qty-label">{t('detail.quantity')}</span>
-                <div className="qty-stepper" role="group" aria-labelledby="qty-label">
-                  <button
-                    aria-label={t('detail.decrease')}
-                    onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    disabled={qty <= 1}
-                  >
-                    −
-                  </button>
-                  <span className="qty-value" aria-live="polite">{qty}</span>
-                  <button
-                    aria-label={t('detail.increase')}
-                    onClick={() => setQty((q) => Math.min(product.stock, q + 1))}
-                    disabled={qty >= product.stock}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
+          <div className="add-to-cart-box">
+            <div className="qty-picker" role="group" aria-label={t('detail.quantity')}>
               <button
-                className={`btn btn-add ${added ? 'btn-success' : 'btn-primary'}`}
-                onClick={handleAdd}
+                type="button"
+                className="qty-btn"
+                aria-label={t('detail.decrease')}
+                disabled={qty <= 1 || soldOut}
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
               >
-                {added ? t('detail.added') : t('detail.addToCart')}
+                −
+              </button>
+              <span className="qty-value" aria-live="polite">
+                {qty}
+              </span>
+              <button
+                type="button"
+                className="qty-btn"
+                aria-label={t('detail.increase')}
+                disabled={qty >= product.stock || soldOut}
+                onClick={() => setQty((q) => Math.min(product.stock, q + 1))}
+              >
+                +
               </button>
             </div>
-          )}
+
+            <button
+              type="button"
+              className="btn btn-primary add-btn"
+              disabled={soldOut}
+              onClick={handleAdd}
+            >
+              {added ? t('detail.added') : t('detail.addToCart')}
+            </button>
+          </div>
 
           {added && (
-            <Link to="/cart" className="cart-link">
-              {t('detail.viewCart')} →
-            </Link>
+            <p className="added-notice" role="status">
+              <Link to="/cart" className="link-more">
+                {t('detail.viewCart')} →
+              </Link>
+            </p>
           )}
         </div>
       </div>
@@ -111,7 +116,7 @@ function ProductView({ product }) {
         <h2>{t('detail.related')}</h2>
         <div className="grid-products">
           {related.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id || p._id} product={p} />
           ))}
         </div>
       </section>
@@ -122,7 +127,40 @@ function ProductView({ product }) {
 export default function ProductDetail() {
   const { id } = useParams()
   const { t } = useLanguage()
-  const product = getProductById(id)
+  const [product, setProduct] = useState(() => getFallbackProduct(id))
+  const [allProducts, setAllProducts] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchDetail = async () => {
+      try {
+        setLoading(true)
+        const res = await api.getProductById(id)
+        if (isMounted && res.success && res.product) {
+          setProduct(res.product)
+        }
+        const listRes = await api.getProducts()
+        if (isMounted && listRes.success && listRes.products) {
+          setAllProducts(listRes.products)
+        }
+      } catch (err) {
+        console.warn('Using offline product detail:', err.message)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    fetchDetail()
+    return () => { isMounted = false }
+  }, [id])
+
+  if (loading && !product) {
+    return (
+      <div className="container section" style={{ textAlign: 'center', padding: '4rem 0' }}>
+        <p className="text-muted">{t('detail.loading')}</p>
+      </div>
+    )
+  }
 
   if (!product) {
     return (
@@ -137,5 +175,5 @@ export default function ProductDetail() {
     )
   }
 
-  return <ProductView key={product.id} product={product} />
+  return <ProductView key={product.id || product._id} product={product} allProducts={allProducts} />
 }

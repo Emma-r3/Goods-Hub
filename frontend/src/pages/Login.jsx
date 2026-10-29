@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useLanguage } from '../context/useLanguage';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -69,15 +70,13 @@ export default function Login() {
 
           <div className="field">
             <label htmlFor="login-password">{t('auth.password')}</label>
-            <input
+            <PasswordInput
               id="login-password"
-              type="password"
-              className="input"
-              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+              placeholder={t('auth.passwordPlaceholder')}
               autoComplete="current-password"
+              required
             />
           </div>
 
@@ -99,4 +98,3 @@ export default function Login() {
     </div>
   );
 }
-

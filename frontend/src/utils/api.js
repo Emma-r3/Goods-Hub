@@ -55,7 +55,7 @@ export const api = {
   getCategories: () => request('/products/categories', { method: 'GET' }),
 
   // Orders Helpers
-  createOrder: (orderData) => request('/orders', { method: 'POST', body: orderData }),
+  createOrder: (orderData, options = {}) => request('/orders', { method: 'POST', body: orderData, ...options }),
   getMyOrders: () => request('/orders/my-orders', { method: 'GET' }),
   getOrderById: (id) => request(`/orders/${id}`, { method: 'GET' }),
 };

@@ -1,8 +1,11 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import { useCart } from '../context/useCart'
+import { useAuth } from '../context/useAuth'
 import { FREE_SHIPPING_THRESHOLD } from '../context/CartProvider'
 import { formatPrice, localized } from '../utils/format'
+import AuthModal from '../components/AuthModal'
 
 export default function Cart() {
   const { lang, t } = useLanguage()
@@ -10,6 +13,22 @@ export default function Cart() {
     items, totalItems, subtotal, shipping, total,
     updateQty, removeItem, clearCart,
   } = useCart()
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return
+    }
+    navigate('/checkout')
+  }
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false)
+    navigate('/checkout')
+  }
 
   if (items.length === 0) {
     return (
@@ -132,11 +151,22 @@ export default function Cart() {
             <span>{formatPrice(total)}</span>
           </div>
 
-          <Link to="/checkout" className="btn btn-primary btn-block">
+          <button
+            className="btn btn-primary btn-block"
+            onClick={handleCheckout}
+          >
             {t('cart.checkout')}
-          </Link>
+          </button>
         </aside>
       </div>
+
+      {/* Auth Modal Popup */}
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={handleAuthSuccess}
+        />
+      )}
     </div>
   )
 }

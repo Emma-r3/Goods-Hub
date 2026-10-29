@@ -5,6 +5,7 @@ import { useCart } from '../context/useCart'
 import { formatPrice, localized } from '../utils/format'
 import { useOrders } from '../context/useOrders'
 import { useAuth } from '../context/useAuth'
+import AuthModal from '../components/AuthModal'
 import api from '../utils/api'
 
 const FIELDS = ['fullName', 'email', 'phone', 'address', 'city', 'postalCode']
@@ -67,13 +68,18 @@ export default function Checkout() {
   const { lang, t } = useLanguage()
   const { items, totalItems, subtotal, shipping, total, clearCart } = useCart()
   const { addOrder } = useOrders()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [touched, setTouched] = useState({})
   const [payment, setPayment] = useState('bank')
   const [order, setOrder] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [apiError, setApiError] = useState('')
+  const [idempotencyKey, setIdempotencyKey] = useState(
+    () => `idemp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`
+  )
 
   // Auto-fill user name & email if logged in
   useEffect(() => {
@@ -104,6 +110,12 @@ export default function Checkout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return
+    }
+
     setTouched(Object.fromEntries(FIELDS.map((f) => [f, true])))
 
     const firstInvalid = FIELDS.find((f) => errors[f])
@@ -113,6 +125,7 @@ export default function Checkout() {
     }
 
     setSubmitting(true)
+    setApiError('')
 
     const newOrder = {
       number: `GH-${Date.now().toString().slice(-8)}`,
@@ -134,8 +147,9 @@ export default function Checkout() {
     }
 
     try {
-      // Sync to MongoDB Backend API
+      // Sync to MongoDB Backend API with Idempotency Key protection
       const apiPayload = {
+        idempotencyKey,
         customerInfo: {
           fullName: form.fullName.trim(),
           email: form.email.trim(),
@@ -156,20 +170,27 @@ export default function Checkout() {
         totalAmount: total,
       }
 
-      const res = await api.createOrder(apiPayload)
+      const res = await api.createOrder(apiPayload, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      })
+
       if (res.success && res.order) {
         newOrder.number = res.order.orderNumber
       }
+
+      // Order created successfully, add to store and reset cart
+      addOrder(newOrder)
+      setOrder(newOrder)
+      clearCart()
+      window.scrollTo(0, 0)
+      // Regenerate idempotency key for next order
+      setIdempotencyKey(`idemp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`)
     } catch (err) {
-      console.warn('Backend API order sync error (order saved locally):', err.message)
+      console.error('Order/Payment Error:', err.message)
+      setApiError(err.message || 'Gagal memproses pembayaran. Silakan periksa kembali data Anda.')
     } finally {
       setSubmitting(false)
     }
-
-    addOrder(newOrder)
-    setOrder(newOrder)
-    clearCart()
-    window.scrollTo(0, 0)
   }
 
   // Success view
@@ -218,6 +239,13 @@ export default function Checkout() {
   return (
     <div className="container section">
       <h1>{t('checkout.title')}</h1>
+
+      {apiError && (
+        <div className="auth-error-alert" role="alert" style={{ margin: '1.25rem 0' }}>
+          <span>⚠️</span>
+          <span>{apiError}</span>
+        </div>
+      )}
 
       <div className="checkout-layout">
         <form onSubmit={handleSubmit} noValidate className="checkout-form">
@@ -355,6 +383,13 @@ export default function Checkout() {
           </div>
         </aside>
       </div>
+
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => setShowAuthModal(false)}
+        />
+      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useLanguage } from '../context/useLanguage';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -86,29 +87,25 @@ export default function Register() {
 
           <div className="field">
             <label htmlFor="reg-password">{t('auth.password')}</label>
-            <input
+            <PasswordInput
               id="reg-password"
-              type="password"
-              className="input"
-              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+              placeholder={t('auth.passwordPlaceholder')}
               autoComplete="new-password"
+              required
             />
           </div>
 
           <div className="field">
             <label htmlFor="reg-confirm">{t('auth.confirmPassword')}</label>
-            <input
+            <PasswordInput
               id="reg-confirm"
-              type="password"
-              className="input"
-              placeholder={t('auth.confirmPasswordPlaceholder')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              required
+              placeholder={t('auth.confirmPasswordPlaceholder')}
               autoComplete="new-password"
+              required
             />
           </div>
 
@@ -130,4 +127,3 @@ export default function Register() {
     </div>
   );
 }
-

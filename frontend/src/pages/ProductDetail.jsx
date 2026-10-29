@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import { useCart } from '../context/useCart'
+import { useAuth } from '../context/useAuth'
 import ProductCard from '../components/ProductCard'
+import AuthModal from '../components/AuthModal'
 import { products as fallbackProducts, getProductById as getFallbackProduct } from '../data/products'
 import { formatPrice, localized } from '../utils/format'
 import api from '../utils/api'
@@ -10,8 +12,10 @@ import api from '../utils/api'
 function ProductView({ product, allProducts }) {
   const { lang, t } = useLanguage()
   const { addItem } = useCart()
+  const { isAuthenticated } = useAuth()
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   const name = localized(product.name, lang)
   const desc = localized(product.description, lang)
@@ -26,6 +30,19 @@ function ProductView({ product, allProducts }) {
   ].slice(0, 4)
 
   const handleAdd = () => {
+    // Require login to add to cart
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return
+    }
+    addItem(product, qty)
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
+  }
+
+  // After successful login via modal, proceed to add item
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false)
     addItem(product, qty)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
@@ -120,6 +137,14 @@ function ProductView({ product, allProducts }) {
           ))}
         </div>
       </section>
+
+      {/* Auth Modal Popup */}
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={handleAuthSuccess}
+        />
+      )}
     </div>
   )
 }

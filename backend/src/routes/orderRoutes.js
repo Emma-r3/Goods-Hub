@@ -10,7 +10,7 @@ import { protect, admin, optionalAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', optionalAuth, createOrder);
+router.post('/', protect, createOrder);
 router.get('/my-orders', protect, getMyOrders);
 router.get('/:id', getOrderById);
 

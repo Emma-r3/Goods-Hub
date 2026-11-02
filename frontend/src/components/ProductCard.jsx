@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import { useCart } from '../context/useCart'
@@ -76,12 +77,15 @@ export default function ProductCard({ product }) {
         </button>
       </div>
 
-      {showAuthModal && (
-        <AuthModal
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={handleAuthSuccess}
-        />
-      )}
+      {/* Portal: modal dirender di <body>, bukan di dalam kartu */}
+      {showAuthModal &&
+        createPortal(
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+            onSuccess={handleAuthSuccess}
+          />,
+          document.body
+        )}
     </article>
   )
 }

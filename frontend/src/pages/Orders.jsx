@@ -54,9 +54,9 @@ export default function Orders() {
       date: o.createdAt,
       total: o.totalAmount,
       payment: o.paymentMethod,
-      customer: o.customerInfo,
+      customer: o.customerInfo || {},
       status: o.status,
-      items: o.items.map((i) => ({
+      items: (o.items || []).map((i) => ({
         id: i.productId || i._id,
         name: i.name,
         price: i.price,
@@ -134,7 +134,15 @@ export default function Orders() {
                     >
                       {i.emoji || '📦'}
                     </span>
-                    <span className="order-item-name">{localized(i.name, lang)}</span>
+                    <span className="order-item-name">
+                      {i.id ? (
+                        <Link to={`/products/${i.id}`} className="order-item-link">
+                          {localized(i.name, lang)}
+                        </Link>
+                      ) : (
+                        localized(i.name, lang)
+                      )}
+                    </span>
                     <span className="order-item-qty">× {i.qty}</span>
                     <span className="order-item-price">
                       {formatPrice(i.price * i.qty)}
@@ -150,7 +158,7 @@ export default function Orders() {
                 </div>
                 <div>
                   <span className="text-muted">{t('orders.shipTo')}:</span>{' '}
-                  {o.customer.fullName}, {o.customer.city}
+                  {[o.customer?.fullName, o.customer?.city].filter(Boolean).join(', ')}
                 </div>
               </div>
             </div>

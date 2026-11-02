@@ -12,6 +12,13 @@ const PAYMENT_LABEL = {
   cod: 'checkout.cod',
 }
 
+// Ambil ID produk dari berbagai kemungkinan bentuk data API
+function getProductId(item) {
+  const p = item.productId ?? item.product
+  if (p && typeof p === 'object') return p._id || p.id || null
+  return p || item.id || item._id || null
+}
+
 export default function Orders() {
   const { lang, t } = useLanguage()
   const { orders: localOrders } = useOrders()
@@ -57,11 +64,12 @@ export default function Orders() {
       customer: o.customerInfo || {},
       status: o.status,
       items: (o.items || []).map((i) => ({
-        id: i.productId || i._id,
+        id: getProductId(i),
         name: i.name,
         price: i.price,
         qty: i.quantity,
         emoji: i.emoji || '📦',
+        bg: i.bg,
       })),
     }
     orderMap.set(o.orderNumber, formatted)
@@ -126,7 +134,7 @@ export default function Orders() {
             <div className="order-body">
               <ul className="order-items" aria-label={t('orders.items')}>
                 {o.items.map((i, idx) => (
-                  <li key={i.id || idx} className="order-item">
+                  <li key={`${i.id || 'item'}-${idx}`} className="order-item">
                     <span
                       className="order-item-emoji"
                       style={{ background: i.bg || '#f3f4f6' }}

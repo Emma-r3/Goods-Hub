@@ -7,6 +7,7 @@ import ProductCard from '../components/ProductCard'
 import AuthModal from '../components/AuthModal'
 import { products as fallbackProducts, getProductById as getFallbackProduct } from '../data/products'
 import { formatPrice, localized } from '../utils/format'
+import { trackEvent, toGAItem } from '../utils/analytics'
 import api from '../utils/api'
 
 function ProductView({ product, allProducts }) {
@@ -29,23 +30,31 @@ function ProductView({ product, allProducts }) {
     ...pool.filter((p) => p.category !== product.category),
   ].slice(0, 4)
 
+  // Tambah ke keranjang + catat ke Google Analytics
+  const addToCartAndTrack = () => {
+    addItem(product, qty)
+    trackEvent('add_to_cart', {
+      currency: 'IDR',
+      value: product.price * qty,
+      items: [toGAItem(product, qty)],
+    })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
+  }
+
   const handleAdd = () => {
     // Require login to add to cart
     if (!isAuthenticated) {
       setShowAuthModal(true)
       return
     }
-    addItem(product, qty)
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
+    addToCartAndTrack()
   }
 
   // After successful login via modal, proceed to add item
   const handleAuthSuccess = () => {
     setShowAuthModal(false)
-    addItem(product, qty)
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
+    addToCartAndTrack()
   }
 
   return (

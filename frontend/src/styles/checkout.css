@@ -1,18 +1,44 @@
-/* FORM */
-.form-card { padding: var(--space-3); }
-.form-card + .form-card { margin-top: var(--space-3); }
-.form-card h2 {
+/*  LAYOUT  */
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+@media (min-width: 900px) {
+  .checkout-layout {
+    grid-template-columns: 1fr 380px;
+    align-items: start;
+  }
+  .checkout-summary { position: sticky; top: 88px; }
+}
+
+.checkout-summary .card { padding: var(--space-3); }
+.checkout-summary h2 {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+/*  FORM SECTIONS  */
+.form-card,
+.form-section { padding: var(--space-3); }
+.form-card + .form-card,
+.form-section + .form-section { margin-top: var(--space-3); }
+.form-card h2,
+.form-section h2 {
   margin-bottom: var(--space-3);
   font-size: var(--text-lg);
 }
 
-.form-grid {
+.form-grid,
+.fields-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-2);
 }
 @media (min-width: 640px) {
-  .form-grid { grid-template-columns: 1fr 1fr; }
+  .form-grid,
+  .fields-grid { grid-template-columns: 1fr 1fr; }
   .field.full { grid-column: 1 / -1; }
 }
 
@@ -35,7 +61,7 @@ textarea.input {
   color: var(--color-danger);
 }
 
-/* PAYMENT OPTIONS */
+/*  PAYMENT OPTIONS  */
 fieldset.form-card { border: 1px solid var(--color-border); min-width: 0; }
 fieldset.form-card legend {
   padding: 0;
@@ -47,8 +73,11 @@ fieldset.form-card legend {
 }
 fieldset.form-card legend + * { clear: both; }
 
-.pay-options { display: grid; gap: var(--space-1); }
-.pay-option {
+.pay-options,
+.payment-options { display: grid; gap: var(--space-1); }
+
+.pay-option,
+.payment-option {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -60,27 +89,52 @@ fieldset.form-card legend + * { clear: both; }
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
 }
-.pay-option:hover { border-color: var(--color-primary); }
-.pay-option:has(input:checked) {
+.pay-option:hover,
+.payment-option:hover { border-color: var(--color-primary); }
+.pay-option:has(input:checked),
+.payment-option.selected {
   border-color: var(--color-primary);
   background: var(--color-primary-light);
 }
-.pay-option:has(input:focus-visible) {
+.pay-option:has(input:focus-visible),
+.payment-option:has(input:focus-visible) {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
-.pay-option input {
+.pay-option input,
+.payment-option input {
   width: 20px;
   height: 20px;
   accent-color: var(--color-primary);
 }
-.pay-note {
+.pay-note,
+.payment-note {
   margin-top: var(--space-2);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
-/* ORDER SUMMARY ITEMS */
+/* SUBMIT & ERROR ALERT  */
+.submit-btn {
+  width: 100%;
+  margin-top: var(--space-3);
+  min-height: 52px;
+  font-size: var(--text-base);
+}
+
+.auth-error-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 500;
+}
+
+/* ORDER SUMMARY ITEMS  */
 .summary-items {
   display: grid;
   gap: var(--space-1);
@@ -104,10 +158,38 @@ fieldset.form-card legend + * { clear: both; }
   border-radius: var(--radius-sm);
   font-size: 1.25rem;
 }
+.summary-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .summary-item-name { flex: 1; }
-.summary-item-price { font-weight: 600; }
+.summary-item-price { font-weight: 600; white-space: nowrap; }
 
-/* SUCCESS */
+.summary-item-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.summary-item-link:hover { color: var(--color-primary-dark); }
+
+/*  TOTALS */
+.summary-calc { display: grid; gap: 4px; }
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  padding-block: var(--space-1);
+}
+.calc-row.total {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+/*  SUCCESS  */
 .success-card {
   max-width: 560px;
   margin-inline: auto;

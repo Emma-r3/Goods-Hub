@@ -6,6 +6,7 @@ import { formatPrice, localized } from '../utils/format'
 import { useOrders } from '../context/useOrders'
 import { useAuth } from '../context/useAuth'
 import AuthModal from '../components/AuthModal'
+import { trackEvent, toGAItem } from '../utils/analytics'
 import api from '../utils/api'
 
 const FIELDS = ['fullName', 'email', 'phone', 'address', 'city', 'postalCode']
@@ -177,6 +178,15 @@ export default function Checkout() {
       if (res.success && res.order) {
         newOrder.number = res.order.orderNumber
       }
+
+      // Google Analytics: catat pembelian (hanya setelah API sukses)
+      trackEvent('purchase', {
+        transaction_id: newOrder.number,
+        currency: 'IDR',
+        value: total,
+        shipping,
+        items: items.map((i) => toGAItem(i, i.qty)),
+      })
 
       // Order created successfully, add to store and reset cart
       addOrder(newOrder)
@@ -358,7 +368,9 @@ export default function Checkout() {
                     {i.emoji}
                   </span>
                   <div className="summary-item-info">
-                    <span className="summary-item-name">{localized(i.name, lang)}</span>
+                    <Link to={`/products/${i.id}`} className="summary-item-link">
+                      {localized(i.name, lang)}
+                    </Link>
                     <span className="text-muted">× {i.qty}</span>
                   </div>
                   <span className="summary-item-price">{formatPrice(i.price * i.qty)}</span>

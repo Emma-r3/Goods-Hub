@@ -24,8 +24,8 @@ const app = express();
 // Standard Middlewares
 app.use(cors({
   origin: '*', // Allow access from React web (5173), Expo mobile (8081), and production
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

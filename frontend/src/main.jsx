@@ -1,4 +1,6 @@
 import { StrictMode } from 'react'
+import { initGA } from './utils/analytics'
+
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './styles/global.css'
@@ -16,7 +18,7 @@ import LanguageProvider from './context/LanguageProvider.jsx'
 import AuthProvider from './context/AuthProvider.jsx'
 import CartProvider from './context/CartProvider.jsx'
 import OrderProvider from './context/OrderProvider.jsx'
-
+initGA()
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>

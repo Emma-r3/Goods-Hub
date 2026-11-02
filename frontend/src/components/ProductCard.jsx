@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../context/useLanguage'
 import { useCart } from '../context/useCart'
 import { formatPrice, localized } from '../utils/format'
+import { trackEvent, toGAItem } from '../utils/analytics'
 
 export default function ProductCard({ product }) {
   const { lang, t } = useLanguage()
@@ -14,6 +15,14 @@ export default function ProductCard({ product }) {
 
   const handleAdd = () => {
     addItem(product, 1)
+
+    // Google Analytics: catat produk yang ditambahkan ke keranjang
+    trackEvent('add_to_cart', {
+      currency: 'IDR',
+      value: product.price,
+      items: [toGAItem(product, 1)],
+    })
+
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)
   }
